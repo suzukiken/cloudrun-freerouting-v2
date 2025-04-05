@@ -26,43 +26,6 @@ class IndexHandler(tornado.web.RequestHandler):
         self.write("Hello, I am Tornado.")
 
 
-class RouteHandler(tornado.web.RequestHandler):
-    def post(self):
-        
-        print(self.request)
-        print(self.request.body)
-        print(psutil.disk_usage("/"))
-
-        subprocess.run([
-            "java",
-            "-jar",
-            "freerouting-2.0.1.jar",
-            "--gui.enabled=false",
-            "-de", 
-            DSN_FILE_PATH,
-            "-do",
-            OUT_FILE_PATH,
-            "-mp",
-            "1000"
-        ])
-        
-        DSN_FILE_PATH = '/opt/input.dsn'
-        OUT_FILE_PATH = '/opt/output.ses'
-        
-        if self.request.body:
-            with open(DSN_FILE_PATH, 'wb') as f_ref:
-                f_ref.write(self.request.body)
-        
-        print(glob.glob('/opt/*'))
-        
-        self.set_header('Content-Type', 'application/octet-stream')
-        self.set_header('Content-Disposition', 'attachment; filename=output.ses')
-        self.write(open(OUT_FILE_PATH, 'rb').read())
-        
-        os.remove(DSN_FILE_PATH)
-        os.remove(OUT_FILE_PATH)
-
-
 class BottomRouteHandler(tornado.web.RequestHandler):
     def post(self):
         
@@ -144,7 +107,6 @@ class BottomRouteExGndHandler(tornado.web.RequestHandler):
 def make_app():
     return tornado.web.Application([
         (r"/", IndexHandler),
-        (r"/getroute/", RouteHandler),
         (r"/getroutebottom/", BottomRouteHandler),
         (r"/getroutebottomexceptgnd/", BottomRouteExGndHandler),
     ])

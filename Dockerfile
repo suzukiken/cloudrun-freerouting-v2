@@ -2,7 +2,6 @@ FROM alpine/java:21-jre
 
 ENV PYTHONUNBUFFERED True
 
-# RUN apt update
 RUN apk update
 RUN apk add bash
 RUN apk add --no-cache python3
