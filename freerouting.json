@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "gui": {
+    "enabled": false
+  },
+  "router": {
+    "default_preferred_direction_trace_cost": 1.0,
+    "default_undesired_direction_trace_cost": 1.0,
+    "max_passes": 10000,
+    "fanout_max_passes": 10000,
+    "max_threads": 1,
+    "improvement_threshold": 0.0001,
+    "trace_pull_tight_accuracy": 1,
+    "allowed_via_types": true,
+    "via_costs": 100,
+    "plane_via_costs": 100,
+    "start_ripup_costs": 1,
+    "automatic_neckdown": false
+  },
+  "usage_and_diagnostic_data": {
+    "disable_analytics": true
+  },
+  "feature_flags": {
+    "logging": true,
+    "multi_threading": false,
+    "select_mode": false,
+    "macros": false,
+    "other_menu": false,
+    "snapshots": false,
+    "file_load_dialog_at_startup": false,
+    "save_jobs": false
+  },
+  "api_server": {
+    "enabled": false
+  }
+}
