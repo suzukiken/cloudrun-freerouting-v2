@@ -7,6 +7,7 @@ import json
 import subprocess
 import glob
 import psutil
+import re
 
 port = 8080 # for GCP Cloud Run
 
@@ -19,6 +20,13 @@ port = 8080 # for GCP Cloud Run
 #     app_log.addHandler(handler)
 #     access_log.addHandler(handler)
 #     gen_log.addHandler(handler)
+
+def get_jar_version(path):
+    if path and re.search(r'/201/?', path):
+        return "freerouting-2.0.1.jar"
+    elif path and re.search(r'/210/?', path):
+        return "freerouting-2.1.0.jar"
+    return "freerouting-2.1.0.jar"
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
@@ -37,6 +45,8 @@ class BottomRouteHandler(tornado.web.RequestHandler):
         RULE_FILE_PATH = '/opt/bottom.rules'
         OUT_FILE_PATH = '/opt/output.ses'
         
+        jar_version = get_jar_version(self.request.path)
+        
         if self.request.body:
             with open(DSN_FILE_PATH, 'wb') as f_ref:
                 f_ref.write(self.request.body)
@@ -44,7 +54,7 @@ class BottomRouteHandler(tornado.web.RequestHandler):
         subprocess.run([
             "java",
             "-jar",
-            "freerouting-2.1.0.jar",
+            jar_version,
             "--gui.enabled=false",
             "-de", 
             DSN_FILE_PATH,
@@ -75,6 +85,8 @@ class BottomRouteExGndHandler(tornado.web.RequestHandler):
         RULE_FILE_PATH = '/opt/bottom.rules'
         OUT_FILE_PATH = '/opt/output.ses'
         
+        jar_version = get_jar_version(self.request.path)
+        
         if self.request.body:
             with open(DSN_FILE_PATH, 'wb') as f_ref:
                 f_ref.write(self.request.body)
@@ -82,7 +94,7 @@ class BottomRouteExGndHandler(tornado.web.RequestHandler):
         subprocess.run([
             "java",
             "-jar",
-            "freerouting-2.0.1.jar",
+            jar_version,
             "--gui.enabled=false",
             "-de", 
             DSN_FILE_PATH,
@@ -120,6 +132,8 @@ class BottomRouteExcludeSpecifiedHandler(tornado.web.RequestHandler):
         RULE_FILE_PATH = '/opt/ignore.rules'
         OUT_FILE_PATH = '/opt/output.ses'
         
+        jar_version = get_jar_version(self.request.path)
+        
         if self.request.body:
             with open(DSN_FILE_PATH, 'wb') as f_ref:
                 f_ref.write(self.request.body)
@@ -127,7 +141,7 @@ class BottomRouteExcludeSpecifiedHandler(tornado.web.RequestHandler):
         command = [
             "java",
             "-jar",
-            "freerouting-2.0.1.jar",
+            jar_version,
             "--gui.enabled=false",
             "-de", 
             DSN_FILE_PATH,
@@ -159,6 +173,12 @@ def make_app():
         (r"/getroutebottom/", BottomRouteHandler),
         (r"/getroutebottomexceptgnd/", BottomRouteExGndHandler),
         (r"/getroutebottomexceptspecified/", BottomRouteExcludeSpecifiedHandler),
+        (r"/201/getroutebottom/", BottomRouteHandler),
+        (r"/210/getroutebottom/", BottomRouteHandler),
+        (r"/201/getroutebottomexceptgnd/", BottomRouteExGndHandler),
+        (r"/210/getroutebottomexceptgnd/", BottomRouteExGndHandler),
+        (r"/201/getroutebottomexceptspecified/", BottomRouteExcludeSpecifiedHandler),
+        (r"/210/getroutebottomexceptspecified/", BottomRouteExcludeSpecifiedHandler),
     ])
 
 
