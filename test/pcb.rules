@@ -1,0 +1,14 @@
+
+(rules PCB ken
+  (snap_angle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (start_ripup_costs 100)
+    (start_pass_no 1000)
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+    )
+  )
+)

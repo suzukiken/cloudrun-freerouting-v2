@@ -1,7 +1,13 @@
+For Local Docker
 ```
 docker build -t freeroutingv2 .
 docker run -it --rm freeroutingv2 bash
-java -jar  --gui.enabled=falsefreerouting-2.0.1.jar -de /opt/sample.dsn -do /opt/output.ses
+java -jar freerouting-2.0.1.jar -de /opt/sample.dsn -do /opt/output.ses --gui.enabled=false
+```
+
+For Local jar
+```
+java -jar freerouting-2.0.1.jar --gui.enabled=false -de test/pcb.dsn -do test/pcb.ses -dr test/pcb.rules -mp 1000
 ```
 
 ```
