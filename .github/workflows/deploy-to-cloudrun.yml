@@ -7,14 +7,12 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  SERVICE_NAME: freerouting-v2
   REGION: asia-northeast1
 
 jobs:
-  prod: 
-    runs-on: ubuntu-latest
-    
+  job_id:
+    # ...
+
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -24,14 +22,14 @@ jobs:
 
     - uses: 'google-github-actions/auth@v2'
       with:
-        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        workload_identity_provider: $GCP_WORKLOAD_IDENTITY_PROVIDER
+        service_account: $GCP_SERVICE_ACCOUNT
 
     - id: 'deploy'
       uses: 'google-github-actions/deploy-cloudrun@v2'
       with:
-        service: $SERVICE_NAME
-        image: gcr.io/$PROJECT_ID/$SERVICE_NAME
+        service: $GCP_SERVICE_NAME
+        image: gcr.io/$GCP_PROJECT_ID/$GCP_SERVICE_NAME
         region: $REGION
 
     - name: 'Use output'
