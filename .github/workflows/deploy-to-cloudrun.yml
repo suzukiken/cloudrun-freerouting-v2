@@ -10,8 +10,8 @@ env:
   REGION: asia-northeast1
 
 jobs:
-  job_id:
-    # ...
+  deploy:
+    runs-on: ubuntu-latest
 
     permissions:
       contents: 'read'
