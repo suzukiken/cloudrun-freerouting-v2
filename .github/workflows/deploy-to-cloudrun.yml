@@ -28,6 +28,7 @@ jobs:
     - id: 'deploy'
       uses: 'google-github-actions/deploy-cloudrun@v2'
       with:
+        project_id: 'firstcloudrun-323509'
         service: 'freeroutingv2'
         image: 'gcr.io/firstcloudrun-323509/freeroutingv2'
         region: 'asia-northeast1'
