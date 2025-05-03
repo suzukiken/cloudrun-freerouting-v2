@@ -28,9 +28,9 @@ jobs:
     - id: 'deploy'
       uses: 'google-github-actions/deploy-cloudrun@v2'
       with:
-        service: $GCP_SERVICE_NAME
-        image: gcr.io/$GCP_PROJECT_ID/$GCP_SERVICE_NAME
-        region: $REGION
+        service: freeroutingv2
+        image: gcr.io/firstcloudrun-323509/freeroutingv2
+        region: asia-northeast1
 
     - name: 'Use output'
       run: 'curl "${{ steps.deploy.outputs.url }}"'
