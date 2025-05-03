@@ -22,15 +22,15 @@ jobs:
 
     - uses: 'google-github-actions/auth@v2'
       with:
-        workload_identity_provider: $GCP_WORKLOAD_IDENTITY_PROVIDER
-        service_account: $GCP_SERVICE_ACCOUNT
+        workload_identity_provider: 'projects/68523936656/locations/global/workloadIdentityPools/mypool/providers/github'
+        service_account: 'my-service-account@68523936656.iam.gserviceaccount.com'
 
     - id: 'deploy'
       uses: 'google-github-actions/deploy-cloudrun@v2'
       with:
-        service: freeroutingv2
-        image: gcr.io/firstcloudrun-323509/freeroutingv2
-        region: asia-northeast1
+        service: 'freeroutingv2'
+        image: 'gcr.io/firstcloudrun-323509/freeroutingv2'
+        region: 'asia-northeast1'
 
     - name: 'Use output'
       run: 'curl "${{ steps.deploy.outputs.url }}"'
