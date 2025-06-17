@@ -1,0 +1,28 @@
+
+(rules PCB hw48na
+  (snap_angle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (fanout off)
+    (autoroute on)
+    (postroute on)
+    (vias off)
+    (via_costs 100)
+    (plane_via_costs 100)
+    (start_ripup_costs 100)
+    (start_pass_no 1000)
+    (layer_rule F.Cu
+      (active off)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.0)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1)
+      (against_preferred_direction_trace_costs 2)
+    )
+  )
+)

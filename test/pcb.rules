@@ -4,11 +4,15 @@
     fortyfive_degree
   )
   (autoroute_settings
-    (start_ripup_costs 100)
+    (start_ripup_costs 1)
     (start_pass_no 1000)
+    (layer_rule F.Cu
+      (active off)
+      (preferred_direction vertical)
+    )
     (layer_rule B.Cu
       (active on)
-      (preferred_direction vertical)
+      (preferred_direction horizontal)
     )
   )
 )

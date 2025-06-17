@@ -8,6 +8,18 @@ import subprocess
 import glob
 import psutil
 import re
+import tempfile
+import time
+import run_command
+import shutil
+
+# Cloud Runのログ設定
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 port = 8080 # for GCP Cloud Run
 
@@ -34,109 +46,36 @@ class IndexHandler(tornado.web.RequestHandler):
         self.write("Hello, I am Tornado.")
 
 
-class BottomRouteHandler(tornado.web.RequestHandler):
+class GetRoutedHandler(tornado.web.RequestHandler):
     def post(self):
-        
-        print(self.request)
-        print(self.request.body)
-        print(psutil.disk_usage("/"))
-        
-        DSN_FILE_PATH = '/opt/input.dsn'
-        RULE_FILE_PATH = '/opt/bottom.rules'
-        OUT_FILE_PATH = '/opt/output.ses'
-        
-        jar_version = get_jar_version(self.request.path)
-        
-        if self.request.body:
-            with open(DSN_FILE_PATH, 'wb') as f_ref:
-                f_ref.write(self.request.body)
-        
-        subprocess.run([
-            "java",
-            "-jar",
-            jar_version,
-            "--gui.enabled=false",
-            "-de", 
-            DSN_FILE_PATH,
-            "-do",
-            OUT_FILE_PATH,
-            "-mp",
-            "1000"
-        ])
-        
-        print(glob.glob('/opt/*'))
-        
-        self.set_header('Content-Type', 'application/octet-stream')
-        self.set_header('Content-Disposition', 'attachment; filename=output.ses')
-        self.write(open(OUT_FILE_PATH, 'rb').read())
-        
-        os.remove(DSN_FILE_PATH)
-        os.remove(OUT_FILE_PATH)
-
-
-class BottomRouteExGndHandler(tornado.web.RequestHandler):
-    def post(self):
-        
-        print(self.request)
-        print(self.request.body)
-        print(psutil.disk_usage("/"))
-        
-        DSN_FILE_PATH = '/opt/input.dsn'
-        RULE_FILE_PATH = '/opt/bottom.rules'
-        OUT_FILE_PATH = '/opt/output.ses'
-        
-        jar_version = get_jar_version(self.request.path)
-        
-        if self.request.body:
-            with open(DSN_FILE_PATH, 'wb') as f_ref:
-                f_ref.write(self.request.body)
-        
-        subprocess.run([
-            "java",
-            "-jar",
-            jar_version,
-            "--gui.enabled=false",
-            "-de", 
-            DSN_FILE_PATH,
-            "-do",
-            OUT_FILE_PATH,
-            "-dr",
-            RULE_FILE_PATH,
-            "-inc",
-            "GND0,GND1,GND2,GND3,GND4,GND5,GND6,GND7"
-        ])
-        
-        print(glob.glob('/opt/*'))
-        
-        self.set_header('Content-Type', 'application/octet-stream')
-        self.set_header('Content-Disposition', 'attachment; filename=output.ses')
-        self.write(open(OUT_FILE_PATH, 'rb').read())
-        
-        os.remove(DSN_FILE_PATH)
-        os.remove(OUT_FILE_PATH)
-
-
-class BottomRouteExcludeSpecifiedHandler(tornado.web.RequestHandler):
-    def post(self):
-        
-        print(self.request)
-        print(self.request.body)
-        print(psutil.disk_usage("/"))
+        logger.info(self.request)
+        logger.info(psutil.disk_usage("/"))
 
         ignore_param = self.get_argument('ignore', '')
         ignore_list = ignore_param.split(',') if ignore_param else []
 
-        print(ignore_list)
+        mp_param = self.get_argument('mp', '')
+
+        logger.info(ignore_list)
         
         DSN_FILE_PATH = '/opt/input.dsn'
-        RULE_FILE_PATH = '/opt/ignore.rules'
+        RULE_FILE_PATH = '/opt/input.rules'
         OUT_FILE_PATH = '/opt/output.ses'
         
         jar_version = get_jar_version(self.request.path)
-        
-        if self.request.body:
-            with open(DSN_FILE_PATH, 'wb') as f_ref:
-                f_ref.write(self.request.body)
+
+        # マルチパートフォームデータからファイルを取得
+        if self.request.files:
+            if 'dsn' in self.request.files:
+                with open(DSN_FILE_PATH, 'wb') as f_ref:
+                    f_ref.write(self.request.files['dsn'][0]['body'])
+            
+            if 'rules' in self.request.files:
+                with open(RULE_FILE_PATH, 'wb') as f_ref:
+                    f_ref.write(self.request.files['rules'][0]['body'])
+
+        logger.info(self.request.files['dsn'][0]['body'])
+        logger.info(self.request.files['rules'][0]['body'])
 
         command = [
             "java",
@@ -149,36 +88,110 @@ class BottomRouteExcludeSpecifiedHandler(tornado.web.RequestHandler):
             OUT_FILE_PATH,
             "-dr",
             RULE_FILE_PATH,
-            "-inc",
-            ",".join(ignore_list)
         ]
 
-        print(' '.join(command))
-        
-        subprocess.run(command)
-        
-        print(glob.glob('/opt/*'))
+        if mp_param:
+            command.append("-mp")
+            command.append(mp_param)
+
+        if ignore_list:
+            command.append("-inc")
+            command.append(",".join(ignore_list))
+
+        logger.info(' '.join(command))
+
+        cp = subprocess.run(command, encoding='utf-8', stdout=subprocess.PIPE)
+
+        logger.info(cp.stdout)
+        logger.info(glob.glob('/opt/*'))
+        logger.info(f"os.path.getsize(OUT_FILE_PATH): {os.path.getsize(OUT_FILE_PATH)}")
         
         self.set_header('Content-Type', 'application/octet-stream')
         self.set_header('Content-Disposition', 'attachment; filename=output.ses')
+        self.set_header('Content-Length', os.path.getsize(OUT_FILE_PATH))
         self.write(open(OUT_FILE_PATH, 'rb').read())
         
         os.remove(DSN_FILE_PATH)
+        os.remove(RULE_FILE_PATH)
         os.remove(OUT_FILE_PATH)
+
+
+class RouteHandler(tornado.web.RequestHandler):
+    def post(self):
+        version = self.get_argument('version', '2.0.1')
+        logger.info(version)
+
+        try:
+            # リクエストボディからDSNファイルの内容を取得
+            dsn_content = self.request.body
+            if not dsn_content:
+                self.set_status(400)
+                self.write(json.dumps({
+                    "success": False,
+                    "error": "DSNファイルが送信されていません"
+                }, ensure_ascii=False))
+                return
+            
+            # 一時ファイルにDSN内容を保存
+            with tempfile.NamedTemporaryFile(suffix='.dsn', delete=False) as temp_dsn:
+                temp_dsn.write(dsn_content)
+                temp_dsn_path = temp_dsn.name
+            
+            try:
+                start_time = time.time()
+                tmp_dir = tempfile.mkdtemp()
+                logger.info(f"一時ディレクトリを作成: {tmp_dir}")
+                original_dsn = os.path.join(tmp_dir, "original.dsn")
+                shutil.copy2(temp_dsn_path, original_dsn)
+                output_ses = os.path.join(tmp_dir, "output.ses")
+                success, timed_out, elapsed = run_command.run_freerouting(
+                    original_dsn,
+                    output_file=output_ses,
+                    version=version,
+                    max_passes=250,
+                    timeout=300
+                )
+                logger.info(f"result: success={success}, timed_out={timed_out}, elapsed={elapsed}")
+                
+                if success and not timed_out:
+                    size = os.path.getsize(output_ses)
+                    logger.info(f"os.path.getsize(output_ses): {size}")
+                    # ファイルI/Oの安定化
+                    with open(output_ses, 'rb+') as f:
+                        f.flush()
+                        os.fsync(f.fileno())
+                    time.sleep(0.1)
+                    self.set_header('Content-Type', 'application/octet-stream')
+                    self.set_header('Content-Disposition', 'attachment; filename=output.ses')
+                    self.set_header('Content-Length', size)
+                    with open(output_ses, 'rb') as f:
+                        self.write(f.read())
+                else:
+                    self.set_header('Content-Type', 'application/json')
+                    self.write(json.dumps({
+                        "success": False,
+                        "error": f"予期せぬエラーが発生しました1: Freerouting失敗またはタイムアウト"
+                    }, ensure_ascii=False))
+            finally:
+                if os.path.exists(temp_dsn_path):
+                    os.unlink(temp_dsn_path)
+                if os.path.exists(tmp_dir):
+                    shutil.rmtree(tmp_dir)
+        except Exception as e:
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps({
+                "success": False,
+                "error": f"予期せぬエラーが発生しました2: {str(e)}"
+            }, ensure_ascii=False))
 
 
 def make_app():
     return tornado.web.Application([
         (r"/", IndexHandler),
-        (r"/getroutebottom/", BottomRouteHandler),
-        (r"/getroutebottomexceptgnd/", BottomRouteExGndHandler),
-        (r"/getroutebottomexceptspecified/", BottomRouteExcludeSpecifiedHandler),
-        (r"/201/getroutebottom/", BottomRouteHandler),
-        (r"/210/getroutebottom/", BottomRouteHandler),
-        (r"/201/getroutebottomexceptgnd/", BottomRouteExGndHandler),
-        (r"/210/getroutebottomexceptgnd/", BottomRouteExGndHandler),
-        (r"/201/getroutebottomexceptspecified/", BottomRouteExcludeSpecifiedHandler),
-        (r"/210/getroutebottomexceptspecified/", BottomRouteExcludeSpecifiedHandler),
+        (r"/getrouted/", GetRoutedHandler),
+        (r"/201/getrouted/", GetRoutedHandler),
+        (r"/210/getrouted/", GetRoutedHandler),
+        (r"/route/", RouteHandler),
     ])
 
 
